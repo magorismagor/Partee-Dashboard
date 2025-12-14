@@ -1,0 +1,117 @@
+
+application {
+  config {
+    baseName ParteeDashboard
+    applicationType gateway
+    packageName com.yneeds.partee.dashboard
+    authenticationType jwt
+    prodDatabaseType mariadb
+    databaseType sql
+    clientFramework angularX
+    buildTool maven
+  }
+  entities *
+}
+
+application {
+  config {
+    baseName ParteeDashboardBackEnd
+    applicationType microservice
+    packageName com.yneeds.partee.dashboard
+    authenticationType jwt
+    prodDatabaseType mariadb
+    databaseType sql
+    buildTool maven
+  }
+  entities *
+}
+
+/**
+* Establecimientos clientes. Se añade cuando un establecimiento ha hecho su primer pago. Se actualiza si se desactiva. Se actualiza la fecha de caducidad cuando hace algún pago.
+* Así podemos ver cuántos clientes hemos perdido y quienes son y de qué tipo (también € perdidos)
+**/
+entity EstablecimientosClientes {
+ 	// --- Identificación Temporal ---
+    idEnPartee Long required
+    tipo String required
+    fechaCreacion LocalDate
+    fechaExpiracion LocalDate
+    fechaPrimerPago LocalDate
+    fechaUltimoPago LocalDate
+    idUltimoPago Long 
+    tipoAlojamiento String
+    numHabs Integer
+    numPlazas Integer
+}
+
+entity UltimasConsultas {
+	idUltimoPago Long
+	idUltimoEstablecimiento Long
+	idUltimoUsuario Long
+}
+
+/**
+ * Entidad para almacenar métricas agregadas mensualmente (Monthly Statistics).
+ * Contiene datos sobre usuarios, establecimientos, pagos y distribución de alojamientos.
+ *
+ * NOTA: Para garantizar la integridad, esta tabla debe tener una restricción de
+ * unicidad en la base de datos para (anio, mes).
+ */
+entity DatosPorMes {
+    // --- Identificación Temporal ---
+    anio Integer required            /** Año de las estadísticas (e.g., 2024) */
+    mes Integer required  /** Mes de las estadísticas (1-12) */
+    fechaInicioMes LocalDate required /** Incluido **/
+    fechaFinMes LocalDate required  /** Incluido **/
+
+    // --- Métricas de Usuarios ---
+    usuariosRegistrados Long required
+    usuariosRegistraronEstablecimientos Long
+    mediaUsuariosRegistraronEstablecimientos Double
+    mediaEstablecimientosPorUsuario Double
+
+    // --- Métricas de Establecimientos Creados y Crecimiento ---
+    establecimientosCreados Long required
+    crecimientoEstablecimientosMoM Double /** Crecimiento MoM (Month over Month) en % */
+    crecimientoEstablecimientosYoY Double /** Crecimiento YoY (Year over Year) en % */
+
+    // --- Métricas Financieras y Pagos ---
+    importeNetoPagos BigDecimal required
+    crecimientoImporteNetoYoY Double
+    numeroPagos Long required
+    crecimientoNumeroPagosYoY Double
+
+    // --- Métricas de Pagadores y Conversión ---
+    establecimientosQueHanPagado Long required
+    crecimientoEstablecimientosQueHanPagadoYoY Double
+    establecimientosConPrimerPago Long required
+    crecimientoEstablecimientosConPrimerPagoYoY Double
+	
+    // --- Aquellos usuarios cuyo primer pago ha sido este mes --- //
+    nuevosClientes Integer
+    
+    // --- Tiempos de Conversión ---
+    mediaDiasCreacionPrimerPago Integer /** Número medio de días desde el alta del alojamiento */
+    desviacionTipicaDiasCreacionPrimerPago Double
+
+    // --- Métricas de Establecimientos Desactivados / Caducados ---
+    establecimientosDesactivadosTotales Long required
+    crecimientoDesactivadosMoM Double
+    crecimientoDesactivadosYoY Double
+    establecimientosCaducadosTotales Long required // La fecha de caducidad es el mes anterior //
+    crecimientoCaducadosMoM Double
+    crecimientoCaducadosYoY Double
+
+    // --- Distribución de Alojamientos por Habitaciones (Bins) ---
+    alojamientos1Hab Long required   /** Alojamientos con 1 habitación (incluye bloques de apartamentos) */
+    alojamientos2Hab Long required
+    alojamientos3Hab Long required
+    alojamientos4Hab Long required
+    alojamientos5a9Hab Long required /** Alojamientos con 5, 6, 7, 8 o 9 habitaciones */
+    alojamientos10masHab Long required /** Alojamientos con 10 o más habitaciones */
+}
+
+dto * with mapstruct
+service * with serviceClass
+paginate D with pagination
+
